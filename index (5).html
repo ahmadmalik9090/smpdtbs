@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Short Link SMP DTBS — Dashboard</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
+  a { color: #15803d; }
+  .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10; }
+  .topbar-inner { max-width: 960px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .logo { font-weight: 800; font-size: 19px; }
+  .logo span { color: #16a34a; }
+  .badge { font-size: 12px; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 4px 8px; border-radius: 999px; font-weight: 700; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 20px 16px 48px; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; }
+  .stat .num { font-size: 28px; font-weight: 800; margin-top: 4px; }
+  .stat .lbl { font-size: 13px; color: #64748b; font-weight: 600; }
+  label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 6px; }
+  input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; }
+  input:focus { outline: 2px solid #16a34a; border-color: #16a34a; }
+  .hint { font-size: 13px; color: #64748b; margin-top: 6px; }
+  .btn { display: inline-block; padding: 12px 16px; background: #16a34a; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .btn.full { width: 100%; margin-top: 16px; }
+  .btn.ghost { background: #fff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 600; }
+  .btn.danger { background: #dc2626; }
+  .btn.small { padding: 7px 10px; font-size: 13px; }
+  .btn:disabled { opacity: .6; cursor: wait; }
+  .error { display: none; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 12px; padding: 12px 14px; margin-top: 14px; }
+  .success { display: none; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px; margin-top: 14px; }
+  .success a { font-weight: 800; word-break: break-all; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .toolbar input { max-width: 340px; }
+  .link-row { border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 10px; background: #fff; }
+  .link-row .short { font-weight: 800; font-size: 16px; word-break: break-all; }
+  .link-row .title { font-weight: 700; margin-top: 2px; }
+  .link-row .dest { color: #64748b; font-size: 14px; word-break: break-all; }
+  .link-row .meta { color: #64748b; font-size: 13px; margin-top: 6px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .edit-box { display: none; margin-top: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; }
+  .muted { color: #64748b; font-size: 14px; }
+  .center { text-align: center; }
+  .login-icon { font-size: 40px; }
+  @media (max-width: 640px) { .stats { grid-template-columns: 1fr; } .toolbar input { max-width: 100%; } }
+</style>
+</head>
+<body>
+
+<!-- ===== LAYAR LOGIN ===== -->
+<div id="loginScreen" style="display:none;">
+  <div class="wrap" style="max-width:480px; padding-top:60px;">
+    <div class="card center">
+      <div class="login-icon">🔒</div>
+      <h1 style="margin:8px 0 4px;">Short Link SMP DTBS</h1>
+      <p class="muted" style="margin:0 0 8px;">Dashboard privat — hanya admin yang bisa masuk.</p>
+      <div style="text-align:left;">
+        <label for="loginKey">Kunci Admin</label>
+        <input id="loginKey" type="password" placeholder="Masukkan kunci admin" autocomplete="off">
+        <div class="hint" id="loginHint">Kunci ini diatur di Apps Script &gt; Project Settings &gt; Script Properties &gt; ADMIN_KEY.</div>
+        <button class="btn full" id="btnLogin" onclick="masuk()">Masuk Dashboard</button>
+        <div id="loginError" class="error"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div id="dashboard" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="logo">🔗 Short Link <span>SMP DTBS</span></div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span class="badge">s.smpdtbs.id</span>
+        <button class="btn ghost small" onclick="keluar()">Keluar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat"><div class="lbl">Total Link</div><div class="num" id="statLinks">0</div></div>
+      <div class="stat"><div class="lbl">Total Klik</div><div class="num" id="statClicks">0</div></div>
+      <div class="stat"><div class="lbl">Paling Banyak Diklik</div><div class="num" id="statTop" style="font-size:16px; line-height:1.4; word-break:break-all;">—</div></div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 4px;">Buat Link Baru</h2>
+      <p class="muted" style="margin:0;">Tempel link panjang, lalu buat versi pendeknya seperti Bitly.</p>
+
+      <label for="longUrl">Link Panjang *</label>
+      <input id="longUrl" type="url" placeholder="https://contoh.com/halaman-yang-sangat-panjang">
+
+      <label for="title">Judul / Keterangan</label>
+      <input id="title" type="text" placeholder="Contoh: Pendaftaran PSAT 2026">
+
+      <label for="customCode">Kode Custom (opsional)</label>
+      <input id="customCode" type="text" placeholder="contoh: psat-2026">
+      <div class="hint">Hanya huruf, angka, - dan _. 3–30 karakter. Dikosongkan = kode acak 6 karakter. Hasilnya: s.smpdtbs.id/kode</div>
+
+      <button class="btn full" id="btnCreate" onclick="buatLink()">Buat Short Link</button>
+
+      <div id="errorBox" class="error"></div>
+      <div id="resultBox" class="success">
+        <div>Link pendekmu sudah jadi:</div>
+        <a id="shortLink" href="#" target="_blank" rel="noopener"></a>
+        <div class="muted" id="origLink" style="margin-top:6px;"></div>
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="btn small" onclick="salinLink(lastShort)">Salin Link</button>
+          <button type="button" class="btn ghost small" onclick="bukaLink(lastShort)">Buka Link</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <h2 style="margin:0;">Semua Link</h2>
+        <input id="searchBox" type="search" placeholder="Cari judul, kode, atau link..." oninput="renderDaftar()">
+      </div>
+      <div id="listBox" class="muted">Memuat...</div>
+    </div>
+
+    <p class="muted center">Data tersimpan di Google Sheets “Shortlink SMP DTBS”, tab Links.<br>
+    Redirect publik <b>s.smpdtbs.id/kode</b> tetap bisa dibuka siapa saja tanpa login.</p>
+  </div>
+</div>
+
+<script>
+let adminKey = "";
+let allLinks = [];
+let lastShort = "";
+
+function showError(msg) {
+  const el = document.getElementById("errorBox");
+  el.style.display = "block"; el.textContent = msg;
+  document.getElementById("resultBox").style.display = "none";
+}
+function hideError() { document.getElementById("errorBox").style.display = "none"; }
+
+function masuk() {
+  const key = document.getElementById("loginKey").value;
+  const btn = document.getElementById("btnLogin");
+  btn.disabled = true; btn.textContent = "Memeriksa...";
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled = false; btn.textContent = "Masuk Dashboard";
+      if (!res.ok) {
+        const el = document.getElementById("loginError");
+        el.style.display = "block"; el.textContent = res.error || "Kunci salah.";
+        return;
+      }
+      adminKey = key;
+      try { sessionStorage.setItem("smpdtbs_admin_key", key); } catch(e) {}
+      tampilkanDashboard();
+    })
+    .withFailureHandler(function(err) {
+      btn.disabled = false; btn.textContent = "Masuk Dashboard";
+      const el = document.getElementById("loginError");
+      el.style.display = "block"; el.textContent = "Gagal: " + err.message;
+    })
+    .verifyAdmin(key);
+}
+
+function keluar() {
+  adminKey = "";
+  try { sessionStorage.removeItem("smpdtbs_admin_key"); } catch(e) {}
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("loginScreen").style.display = "block";
+  document.getElementById("loginKey").value = "";
+}
+
+function tampilkanDashboard() {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+  muatSemua();
+}
+
+function muatSemua() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok) { document.getElementById("listBox").textContent = res.error || "Gagal memuat."; return; }
+      allLinks = res.links || [];
+      renderDaftar();
+    })
+    .getLinks(adminKey);
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok) return;
+      document.getElementById("statLinks").textContent = res.totalLinks;
+      document.getElementById("statClicks").textContent = res.totalClicks;
+      document.getElementById("statTop").textContent = res.top ? ("s.smpdtbs.id/" + res.top.code + " (" + res.top.clicks + " klik)") : "—";
+    })
+    .getStats(adminKey);
+}
+
+function renderDaftar() {
+  const q = (document.getElementById("searchBox").value || "").toLowerCase();
+  const box = document.getElementById("listBox");
+  const filtered = allLinks.filter(function(l) {
+    return !q || (l.code + " " + (l.title || "") + " " + l.url + " " + l.short).toLowerCase().includes(q);
+  });
+  if (filtered.length === 0) { box.innerHTML = "<p>Belum ada link. Buat link pertamamu di atas.</p>"; return; }
+  let html = "";
+  filtered.forEach(function(l) {
+    const created = l.created ? new Date(l.created).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-";
+    html += '<div class="link-row">' +
+      '<div class="short"><a href="' + l.short + '" target="_blank" rel="noopener">' + l.short.replace("https://", "") + '</a></div>' +
+      '<div class="title">' + escapeHtml(l.title || "(tanpa judul)") + '</div>' +
+      '<div class="dest">' + escapeHtml(l.url) + '</div>' +
+      '<div class="meta">' + l.clicks + ' klik • Dibuat ' + created + ' • Kode: <b>' + escapeHtml(l.code) + '</b></div>' +
+      '<div class="actions">' +
+        '<button class="btn small" onclick="salinLink(\'' + l.short + '\')">Salin</button>' +
+        '<button class="btn ghost small" onclick="bukaLink(\'' + l.short + '\')">Buka</button>' +
+        '<button class="btn ghost small" onclick="toggleEdit(\'' + l.code + '\')">Edit</button>' +
+        '<button class="btn danger small" onclick="hapusLink(\'' + l.code + '\')">Hapus</button>' +
+      '</div>' +
+      '<div class="edit-box" id="edit-' + l.code + '">' +
+        '<label>Judul baru</label><input id="edit-title-' + l.code + '" value="' + escapeAttr(l.title || "") + '">' +
+        '<label>URL tujuan baru</label><input id="edit-url-' + l.code + '" value="' + escapeAttr(l.url) + '">' +
+        '<div style="display:flex; gap:8px; margin-top:10px;"><button class="btn small" onclick="simpanEdit(\'' + l.code + '\')">Simpan</button>' +
+        '<button class="btn ghost small" onclick="toggleEdit(\'' + l.code + '\')">Batal</button></div>' +
+      '</div></div>';
+  });
+  box.innerHTML = html;
+}
+
+function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function escapeAttr(s) { return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
+
+function buatLink() {
+  hideError();
+  const longUrl = document.getElementById("longUrl").value.trim();
+  const title = document.getElementById("title").value.trim();
+  const customCode = document.getElementById("customCode").value.trim();
+  if (!longUrl) { showError("Isi dulu link panjangnya."); return; }
+  const btn = document.getElementById("btnCreate");
+  btn.disabled = true; btn.textContent = "Membuat...";
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled = false; btn.textContent = "Buat Short Link";
+      if (!res.ok) { showError(res.error || "Gagal membuat link."); return; }
+      lastShort = res.short;
+      const a = document.getElementById("shortLink");
+      a.href = res.short; a.textContent = res.short;
+      document.getElementById("origLink").textContent = "Asli: " + res.url;
+      document.getElementById("resultBox").style.display = "block";
+      document.getElementById("longUrl").value = "";
+      document.getElementById("customCode").value = "";
+      muatSemua();
+    })
+    .withFailureHandler(function(err) {
+      btn.disabled = false; btn.textContent = "Buat Short Link";
+      showError("Terjadi kesalahan: " + err.message);
+    })
+    .createShortLink(longUrl, customCode, title, adminKey);
+}
+
+function salinLink(short) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(short).then(function(){ alert("Disalin: " + short); });
+  } else { prompt("Salin link ini:", short); }
+}
+function bukaLink(short) { window.open(short, "_blank"); }
+
+function toggleEdit(code) {
+  const el = document.getElementById("edit-" + code);
+  if (el) el.style.display = (el.style.display === "block" ? "none" : "block");
+}
+
+function simpanEdit(code) {
+  const newTitle = document.getElementById("edit-title-" + code).value;
+  const newUrl = document.getElementById("edit-url-" + code).value;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok) { alert(res.error || "Gagal menyimpan."); return; }
+      muatSemua();
+    })
+    .updateLink(code, newUrl, newTitle, adminKey);
+}
+
+function hapusLink(code) {
+  if (!confirm("Hapus link s.smpdtbs.id/" + code + " ?")) return;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok) { alert(res.error || "Gagal menghapus."); return; }
+      muatSemua();
+    })
+    .deleteLink(code, adminKey);
+}
+
+// Saat halaman dibuka: cek apakah dashboard butuh kunci
+google.script.run
+  .withSuccessHandler(function(needKey) {
+    if (!needKey) {
+      adminKey = "";
+      tampilkanDashboard();
+    } else {
+      // coba kunci yang tersimpan di sesi ini
+      let saved = "";
+      try { saved = sessionStorage.getItem("smpdtbs_admin_key") || ""; } catch(e) {}
+      if (saved) {
+        document.getElementById("loginKey").value = saved;
+        masuk();
+      } else {
+        document.getElementById("loginScreen").style.display = "block";
+      }
+    }
+  })
+  .isAdminRequired();
+</script>
+</body>
+</html>

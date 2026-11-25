@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>s.smpdtbs.id — Short Link SMP DTBS</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; background: #f3f4f6; color: #111827; display: flex; min-height: 100vh; align-items: center; justify-content: center; padding: 20px; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 28px; max-width: 520px; width: 100%; text-align: center; }
+  h1 { margin: 0 0 8px; font-size: 26px; }
+  p { color: #6b7280; }
+  a.btn { display: inline-block; margin-top: 14px; padding: 12px 18px; background: #16a34a; color: #fff; text-decoration: none; border-radius: 10px; font-weight: 700; }
+  code { background: #f3f4f6; padding: 2px 6px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div class="card" id="box">
+  <h1>🔗 s.smpdtbs.id</h1>
+  <p id="msg">Mengalihkan...</p>
+</div>
+<script>
+  // File ini WAJIB ada di GitHub Pages.
+  // Saat orang buka s.smpdtbs.id/abc123, GitHub Pages tidak menemukan file
+  // /abc123, lalu menampilkan 404.html ini. Script di bawah membaca kode
+  // dari URL dan mengalihkan lewat Apps Script — jadi short link tetap jalan.
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/GANTI-DENGAN-URL-EXEC-KAMU/exec";
+  const CREATE_URL = APPS_SCRIPT_URL;
+  function showNotFound(code) {
+    document.getElementById("msg").innerHTML = "Link <code>" + code + "</code> tidak ditemukan.<br>Periksa kembali kode short link-nya.";
+    const a = document.createElement("a");
+    a.className = "btn"; a.href = CREATE_URL; a.textContent = "Buat Short Link Baru";
+    document.getElementById("box").appendChild(a);
+  }
+  (function () {
+    const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
+    const code = decodeURIComponent(path.split("/")[0] || "").trim();
+    if (!code || !/^[A-Za-z0-9_-]{3,30}$/.test(code)) { showNotFound(code || "(kosong)"); return; }
+    fetch(APPS_SCRIPT_URL + "?api=resolve&code=" + encodeURIComponent(code))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && data.ok && data.url) { window.location.replace(data.url); }
+        else { showNotFound(code); }
+      })
+      .catch(function () {
+        document.getElementById("msg").textContent = "Gagal menghubungi server. Coba lagi sebentar lagi.";
+      });
+  })();
+</script>
+</body>
+</html>
